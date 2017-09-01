@@ -29,27 +29,43 @@ class DocMySQL{
                 `status` INT NULL,
                 PRIMARY KEY (`id`) )
                 ENGINE = MyISAM;");
+            
+            $this->buildDoc();
         }
+        else $this->rebuildDoc();
     }
     
     public function numberOfTables(){
         return $this->conSQL->query('SHOW TABLES')->num_rows - 1;
     }
     
-    public function buildDoc(){
-        echo '<table>';
+    public function listOfTables(){
+        $array = [];
+        $result = $this->conSQL->query("SHOW TABLES");
+        while($row = $result->fetch_assoc())
+            array_push ($array, $row['Tables_in_'.$this->db]);
+        
+        return $array;
+    }
+    
+    private function buildDoc(){
         $result = $this->conSQL->query("SHOW TABLES");
         if ($result->num_rows > 0){
             while($row = $result->fetch_assoc()){
-                //echo $row['Tables_in_'.$this->db]."<br>";
-                $result1 = $this->conSQL->query("DESC `".$row['Tables_in_'.$this->db]."`");
                 $tab = $row['Tables_in_'.$this->db];
-                while($row1 = $result1->fetch_assoc()){
-                    echo <<<HTML
-                    <tr><td>$tab</td><td>$row1[Field]</td><td>$row1[Type]</td><td></td><td></td><td></td>
-                        </tr>
-HTML;
-                }
+                if($tab != $this->nameDocTab){
+                    $result1 = $this->conSQL->query("DESC `$tab`");                
+                    while($row1 = $result1->fetch_assoc()){
+                        $row1[Type] = str_replace("'", "", $row1[Type]);
+                        $row1[Type] = str_replace('"', "", $row1[Type]);
+                        $row1['Default'] = htmlspecialchars($row1['Default']);
+                        $this->conSQL->query("INSERT INTO `$this->nameDocTab` (`table_name`,`field_name`,`type`,`null`,`key`,`default`,`extra`,"
+                                . "`description`,`status`) VALUES('$tab','$row1[Field]','$row1[Type]','$row1[Null]','$row1[Key]',"
+                                . "'$row1[Default]','$row1[Extra]','',0)");
+                        echo $this->conSQL->error;
+                        
+                    }
+                }                
             }
         }
     }
@@ -73,4 +89,3 @@ HTML;
 
 $doc = new DocMySQL('localhost', 'root', 'ala#ma#kota','platforma');
 //echo $doc->numberOfTables();
-$doc->buildDoc();

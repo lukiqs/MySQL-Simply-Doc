@@ -48,6 +48,24 @@ class DocMySQL{
         return $array;
     }
     
+    public function listOfFields($tableName){
+        $array = [];
+        $result = $this->conSQL->query("SELECT * FROM `$this->nameDocTab` WHERE `table_name`='$tableName' ;");
+        while($row = $result->fetch_assoc()){
+            $tmp[field] = $row[field_name];
+            $tmp[type] = $row[type];
+            $tmp[nll] = $row['null'];
+            $tmp[key] = $row[key];
+            $tmp[def] = $row['default'];
+            $tmp[ext] = $row[extra];
+            $tmp[desc] = $row[descrition];
+            $tmp[status] = $row[status];
+            
+            array_push ($array,$tmp);
+        }
+        return $array;
+    }
+
     private function buildDoc(){
         $result = $this->conSQL->query("SHOW TABLES");
         if ($result->num_rows > 0){
@@ -88,4 +106,39 @@ class DocMySQL{
 }
 
 $doc = new DocMySQL('localhost', 'root', 'ala#ma#kota','platforma');
-//echo $doc->numberOfTables();
+$arr = $doc->listOfTables();
+$arr1 = [];
+        
+if(isset($_POST[table]))
+    $arr1 = $doc->listOfFields ($_POST[table]);
+
+echo "<form method='POST'><select name='table'><option>Wybierz</option>";
+for($i=0;$i<count($arr);$i++)
+    echo "<option>$arr[$i]</option>";
+echo "</select> <input type='submit'></form>";
+
+echo <<<TAB
+<center>
+<table>
+<tr>
+<th>Nazwa pola</th>
+<th>Typ</th>
+<th>NULL</th>
+<th>Key</th>
+<th>def</th>
+<th>Extra</th>
+<th>Opis</th>
+</tr>
+TAB;
+
+for($i=0;$i<count($arr1);$i++){
+    echo "<tr>";
+    echo "<td>{$arr1[$i][field]}</td>";
+    echo "<td>{$arr1[$i][type]}</td>";
+    echo "<td>{$arr1[$i][nll]}</td>";
+    echo "<td>{$arr1[$i][key]}</td>";
+    echo "<td>{$arr1[$i][def]}</td>";
+    echo "<td>{$arr1[$i][ext]}</td>";
+    echo "<td><textarea>{$arr1[$i][desc]}</textarea></td>";
+    echo "</tr>";
+}
